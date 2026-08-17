@@ -6,6 +6,21 @@ services:
       - "8080:80"
     restart: unless-stopped
 
+  notifier:
+    build: ./notifier
+    restart: unless-stopped
+    environment:
+      # Required: set your ntfy topic (keep it unguessable, e.g. "nate-letter-k7x2")
+      NTFY_TOPIC: ${NTFY_TOPIC}
+      # Optional overrides
+      NTFY_URL: ${NTFY_URL:-https://ntfy.sh}
+      APP_URL: ${APP_URL:-http://localhost:8080}
+      CRON_SCHEDULE: ${CRON_SCHEDULE:-0 9 1 * *}   # 9 AM on the 1st of every month
+      # Set to "true" to get a test ping immediately on container start
+      NTFY_TEST_ON_START: ${NTFY_TEST_ON_START:-false}
+    depends_on:
+      - app
+
   dev:
     image: node:20-alpine
     working_dir: /app

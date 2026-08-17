@@ -14,7 +14,6 @@ export function Home({ data, currentYear, currentMonth, onNavigate }: HomeProps)
   const yearEnd = data.yearEndEntries.find((e) => e.year === currentYear);
   const podcast = data.podcastEntries?.find((e) => e.year === currentYear);
 
-  const accessibleMonths = currentMonth + 1; // 0-indexed, months up to today
   const completedMonths = monthEntries.length;
   const pct = Math.round((completedMonths / 12) * 100);
 

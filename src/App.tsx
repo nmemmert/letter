@@ -6,6 +6,7 @@ import { LetterView } from "./components/LetterView";
 import { Welcome } from "./components/Welcome";
 import { PodcastYearEndForm } from "./components/PodcastYearEnd";
 import { Home } from "./components/Home";
+import { AllYearsLetter } from "./components/AllYearsLetter";
 import {
   load,
   save,
@@ -99,6 +100,9 @@ export default function App() {
         )}
         {view.kind === "letter" && (
           <LetterView data={data} year={view.year} />
+        )}
+        {view.kind === "allYears" && (
+          <AllYearsLetter data={data} />
         )}
         {view.kind === "podcast" && (
           <PodcastYearEndForm

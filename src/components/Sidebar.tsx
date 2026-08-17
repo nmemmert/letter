@@ -6,7 +6,8 @@ export type View =
   | { kind: "month"; year: number; month: number }
   | { kind: "yearEnd"; year: number }
   | { kind: "letter"; year: number }
-  | { kind: "podcast"; year: number };
+  | { kind: "podcast"; year: number }
+  | { kind: "allYears" };
 
 interface SidebarProps {
   data: AppData;
@@ -35,6 +36,17 @@ export function Sidebar({
         <span className="brand-icon">✉</span>
         <span className="brand-name">Annual Letter</span>
       </button>
+
+      <ul className="sidebar-months" style={{ marginBottom: 8 }}>
+        <li>
+          <button
+            className={`sidebar-item sidebar-letter ${view.kind === "allYears" ? "active" : ""}`}
+            onClick={() => onViewChange({ kind: "allYears" })}
+          >
+            <span className="sidebar-item-name">📚 All Years</span>
+          </button>
+        </li>
+      </ul>
 
       {years.map((year) => {
         const monthEntries = data.monthlyEntries.filter((e) => e.year === year);

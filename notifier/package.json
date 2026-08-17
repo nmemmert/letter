@@ -1,0 +1,9 @@
+{
+  "name": "letter-notifier",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "index.mjs",
+  "dependencies": {
+    "node-cron": "^3.0.3"
+  }
+}
