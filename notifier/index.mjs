@@ -1,9 +1,12 @@
 import cron from "node-cron";
 
-const NTFY_URL = process.env.NTFY_URL || "https://ntfy.sh";
-const NTFY_TOPIC = process.env.NTFY_TOPIC;
-const CRON_SCHEDULE = process.env.CRON_SCHEDULE || "0 9 1 * *"; // 9 AM on the 1st of each month
-const APP_URL = process.env.APP_URL || "http://localhost:8080";
+const NTFY_URL      = process.env.NTFY_URL      || "https://ntfy.sh";
+const NTFY_TOPIC    = process.env.NTFY_TOPIC;
+const NTFY_PRIORITY = process.env.NTFY_PRIORITY  || "default";
+const NTFY_TOKEN    = process.env.NTFY_TOKEN;     // Bearer token for private topics
+const CRON_SCHEDULE = process.env.CRON_SCHEDULE  || "0 9 1 * *";
+const TZ            = process.env.TZ             || "America/Chicago";
+const APP_URL       = process.env.APP_URL        || "http://localhost:8080";
 
 if (!NTFY_TOPIC) {
   console.error("NTFY_TOPIC is required. Set it in your environment or docker-compose.");
@@ -26,15 +29,18 @@ async function sendReminder() {
   const message = `${monthName} ${year} is done. Take 10 minutes to capture the month before it fades. Open your letter app to answer this month's 6 prompts.`;
 
   try {
+    const headers = {
+      Title: title,
+      Priority: NTFY_PRIORITY,
+      Tags: "pencil,calendar",
+      Click: APP_URL,
+      "Content-Type": "text/plain",
+    };
+    if (NTFY_TOKEN) headers["Authorization"] = `Bearer ${NTFY_TOKEN}`;
+
     const res = await fetch(`${NTFY_URL}/${NTFY_TOPIC}`, {
       method: "POST",
-      headers: {
-        Title: title,
-        Priority: "default",
-        Tags: "pencil,calendar",
-        Click: APP_URL,
-        "Content-Type": "text/plain",
-      },
+      headers,
       body: message,
     });
 
@@ -50,11 +56,13 @@ async function sendReminder() {
 
 console.log(`[${new Date().toISOString()}] Notifier started`);
 console.log(`  Topic:    ${NTFY_URL}/${NTFY_TOPIC}`);
-console.log(`  Schedule: ${CRON_SCHEDULE}`);
+console.log(`  Priority: ${NTFY_PRIORITY}`);
+console.log(`  Auth:     ${NTFY_TOKEN ? "Bearer token set" : "none (public topic)"}`);
+console.log(`  Schedule: ${CRON_SCHEDULE} (${TZ})`);
 console.log(`  App URL:  ${APP_URL}`);
 
 // Run on schedule
-cron.schedule(CRON_SCHEDULE, sendReminder, { timezone: "America/Chicago" });
+cron.schedule(CRON_SCHEDULE, sendReminder, { timezone: TZ });
 
 // Send a startup test ping in dev mode
 if (process.env.NTFY_TEST_ON_START === "true") {

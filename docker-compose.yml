@@ -1,26 +1,54 @@
 services:
+
+  # ── Web app (nginx, port 8080) ──────────────────────────────────────────────
   app:
     build: .
     image: ghcr.io/nmemmert/letter:main
     ports:
-      - "8080:80"
+      - "${APP_PORT:-8080}:80"
     restart: unless-stopped
 
+  # ── Monthly ntfy reminder ───────────────────────────────────────────────────
   notifier:
     build: ./notifier
     restart: unless-stopped
+    env_file:
+      - path: .env
+        required: false        # container still starts without a .env file
     environment:
-      # Required: set your ntfy topic (keep it unguessable, e.g. "nate-letter-k7x2")
-      NTFY_TOPIC: ${NTFY_TOPIC}
-      # Optional overrides
+      # ── ntfy connection ───────────────────────────────────────────────────
+      # Required: your ntfy topic — keep it unguessable, e.g. "nate-letter-k7x2"
+      # Subscribe at https://ntfy.sh/<NTFY_TOPIC> or in the ntfy mobile app
+      NTFY_TOPIC: ${NTFY_TOPIC:?NTFY_TOPIC is required — set it in .env}
+
+      # ntfy server (default: ntfy.sh; set to your self-hosted URL if applicable)
       NTFY_URL: ${NTFY_URL:-https://ntfy.sh}
+
+      # Bearer token for access-controlled / private topics (leave blank for public)
+      NTFY_TOKEN: ${NTFY_TOKEN:-}
+
+      # Notification priority: min | low | default | high | urgent
+      NTFY_PRIORITY: ${NTFY_PRIORITY:-default}
+
+      # ── Schedule ──────────────────────────────────────────────────────────
+      # Cron expression — default fires at 9 AM on the 1st of every month
+      # Format: minute hour day-of-month month day-of-week
+      CRON_SCHEDULE: ${CRON_SCHEDULE:-0 9 1 * *}
+
+      # IANA timezone for the cron schedule
+      TZ: ${TZ:-America/Chicago}
+
+      # ── App ───────────────────────────────────────────────────────────────
+      # URL the notification deep-links back to (shown as "Open" in ntfy)
       APP_URL: ${APP_URL:-http://localhost:8080}
-      CRON_SCHEDULE: ${CRON_SCHEDULE:-0 9 1 * *}   # 9 AM on the 1st of every month
-      # Set to "true" to get a test ping immediately on container start
+
+      # Set to "true" to fire a test notification immediately on container start
       NTFY_TEST_ON_START: ${NTFY_TEST_ON_START:-false}
+
     depends_on:
       - app
 
+  # ── Local dev (Vite HMR, port 5173) — run with: docker compose --profile dev up dev
   dev:
     image: node:20-alpine
     working_dir: /app
@@ -28,7 +56,9 @@ services:
       - .:/app
       - node_modules:/app/node_modules
     ports:
-      - "5173:5173"
+      - "${DEV_PORT:-5173}:5173"
+    environment:
+      NODE_ENV: development
     command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
     profiles: [dev]
 
