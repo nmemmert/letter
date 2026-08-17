@@ -7,11 +7,12 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+  APP_IMAGE: ghcr.io/nmemmert/letter
+  NOTIFIER_IMAGE: ghcr.io/nmemmert/letter-notifier
 
 jobs:
   docker:
-    name: Build & push image
+    name: Build & push images
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -30,23 +31,44 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract metadata (tags & labels)
-        id: meta
+      - name: Extract metadata — app
+        id: meta-app
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          images: ${{ env.APP_IMAGE }}
           tags: |
             type=ref,event=branch
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=sha,prefix=sha-,format=short
 
-      - name: Build and push
+      - name: Extract metadata — notifier
+        id: meta-notifier
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.NOTIFIER_IMAGE }}
+          tags: |
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix=sha-,format=short
+
+      - name: Build and push — app
         uses: docker/build-push-action@v6
         with:
           context: .
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          tags: ${{ steps.meta-app.outputs.tags }}
+          labels: ${{ steps.meta-app.outputs.labels }}
+          cache-from: type=gha,scope=app
+          cache-to: type=gha,mode=max,scope=app
+
+      - name: Build and push — notifier
+        uses: docker/build-push-action@v6
+        with:
+          context: ./notifier
+          push: true
+          tags: ${{ steps.meta-notifier.outputs.tags }}
+          labels: ${{ steps.meta-notifier.outputs.labels }}
+          cache-from: type=gha,scope=notifier
+          cache-to: type=gha,mode=max,scope=notifier
